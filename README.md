@@ -2,6 +2,10 @@
 
 For Generating AI Images
 
+## Features
+
+Generate Real AI Images and share it with the community,
+
 ## Technologies used
 
 React

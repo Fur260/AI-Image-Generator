@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 import { Card, FormField, Loader } from "../components";
-import { apiUrl } from "../utils";
+import { apiUrl, removeDuplicateObjectsFromArray } from "../utils";
 
 const RenderCards = ({ data, title }) => {
   if (data?.length) {
@@ -16,17 +16,18 @@ const RenderCards = ({ data, title }) => {
 const Home = () => {
   const [loading, setLoading] = useState(false);
   const [allPosts, setAllPosts] = useState([]);
+  const [postsCount, setPostsCount] = useState(0);
 
   const [searchText, setSearchText] = useState("");
   const [searchTimeout, setSearchTimeout] = useState(null);
   const [searchedResults, setSearchedResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [page, setPage] = useState(1);
 
   const fetchPosts = async () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/v1/post`, {
+      const response = await fetch(`${apiUrl}/api/v1/post?page=${page}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -35,7 +36,12 @@ const Home = () => {
 
       if (response.ok) {
         const result = await response.json();
-        setAllPosts(result.data.reverse());
+        const posts = removeDuplicateObjectsFromArray([
+          ...allPosts,
+          ...result.data,
+        ]);
+        setAllPosts(posts);
+        setPostsCount(result.count);
       }
     } catch (err) {
       alert(err);
@@ -46,7 +52,7 @@ const Home = () => {
 
   useEffect(() => {
     fetchPosts();
-  }, []);
+  }, [page]);
 
   const handleSearchChange = (e) => {
     setLoading(true);
@@ -90,7 +96,7 @@ const Home = () => {
       </div>
 
       <div className="mt-10">
-        {loading ? (
+        {loading && page === 1 ? (
           <div className="flex justify-center items-center">
             <Loader />
           </div>
@@ -112,6 +118,17 @@ const Home = () => {
                 <RenderCards data={allPosts} title="No Posts Yet" />
               )}
             </div>
+            {postsCount > allPosts.length && (
+              <div className="flex items-center justify-center mt-4">
+                <button
+                  className="p-4 rounded-lg bg-blue-700 text-white text-sm font-semibold font-inter"
+                  onClick={() => setPage((page) => page + 1)}
+                  disabled={loading}
+                >
+                  {loading ? "Loading..." : "Show More"}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

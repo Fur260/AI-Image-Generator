@@ -15,3 +15,14 @@ export async function downloadImage(_id, photo) {
 }
 
 export const apiUrl = import.meta.env.VITE_BACKEND_URL;
+
+export const removeDuplicateObjectsFromArray = (list) => {
+  const listSet = new Set();
+  return list.filter((item) => {
+    if (listSet.has(item._id)) {
+      return false;
+    }
+    listSet.add(item._id);
+    return true;
+  });
+};

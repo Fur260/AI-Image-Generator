@@ -19,27 +19,30 @@ const Home = () => {
   const [postsCount, setPostsCount] = useState(0);
 
   const [searchText, setSearchText] = useState("");
+  const [debounceSearch, setDebounceSearch] = useState("");
   const [searchTimeout, setSearchTimeout] = useState(null);
-  const [searchedResults, setSearchedResults] = useState([]);
   const [page, setPage] = useState(1);
 
   const fetchPosts = async () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/v1/post?page=${page}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${apiUrl}/api/v1/post?page=${page}&search=${debounceSearch}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();
-        const posts = removeDuplicateObjectsFromArray([
-          ...allPosts,
-          ...result.data,
-        ]);
+        const posts =
+          debounceSearch && page == 1
+            ? result.data
+            : removeDuplicateObjectsFromArray([...allPosts, ...result.data]);
         setAllPosts(posts);
         setPostsCount(result.count);
       }
@@ -52,22 +55,17 @@ const Home = () => {
 
   useEffect(() => {
     fetchPosts();
-  }, [page]);
+  }, [page, debounceSearch]);
 
   const handleSearchChange = (e) => {
     setLoading(true);
-    clearTimeout(searchTimeout);
     setSearchText(e.target.value);
+    clearTimeout(searchTimeout);
 
     setSearchTimeout(
       setTimeout(() => {
-        const searchResult = allPosts.filter(
-          (item) =>
-            item.name.toLowerCase().includes(searchText.toLowerCase()) ||
-            item.prompt.toLowerCase().includes(searchText.toLowerCase())
-        );
-        setSearchedResults(searchResult);
-        setLoading(false);
+        setDebounceSearch(e.target.value);
+        setPage(1);
       }, 500)
     );
   };
@@ -109,14 +107,7 @@ const Home = () => {
               </h2>
             )}
             <div className="grid lg:grid-cols-4 sm:grid-cols-3 xs:grid-cols-2 grid-cols-1 gap-3">
-              {searchText ? (
-                <RenderCards
-                  data={searchedResults}
-                  title="No Search Results Found"
-                />
-              ) : (
-                <RenderCards data={allPosts} title="No Posts Yet" />
-              )}
+              <RenderCards data={allPosts} title="No Posts Yet" />
             </div>
             {postsCount > allPosts.length && (
               <div className="flex items-center justify-center mt-4">

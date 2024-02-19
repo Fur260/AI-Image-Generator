@@ -14,15 +14,21 @@ cloudinary.config({
 
 router.route("/").get(async (req, res) => {
   try {
-    const page = req.query.page || 1;
-    const limit = 2;
+    const { page = 1, search = "" } = req.query || {};
+    const limit = 10;
     const skip = (page - 1) * limit;
-    const posts = await Post.find({})
+    const searchRegex = new RegExp(search, "i");
+
+    const posts = await Post.find({
+      $or: [{ name: searchRegex }, { prompt: searchRegex }],
+    })
       .limit(limit)
       .skip(skip)
       .sort({ createdAt: -1 });
 
-    const count = await Post.countDocuments();
+    const count = await Post.countDocuments({
+      $or: [{ name: searchRegex }, { prompt: searchRegex }],
+    });
 
     res.status(200).json({ success: true, data: posts, count });
   } catch (error) {
